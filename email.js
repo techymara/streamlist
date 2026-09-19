@@ -14,6 +14,12 @@ function configured() {
   return !!(process.env.RESEND_API_KEY && process.env.DIGEST_TO_EMAIL);
 }
 
+// Pumpkin in October (spooky season), skull and crossbones the rest of the
+// year — getMonth() is 0-indexed, so October is 9.
+function seasonalEmoji() {
+  return new Date().getMonth() === 9 ? '🎃' : '☠️';
+}
+
 function movieRow(m, { extra = '', rank = null, dim = false } = {}) {
   const poster = m.poster_path
     ? `<img src="${POSTER_BASE}${m.poster_path}" width="60" style="border-radius:4px;display:block;${dim ? 'filter:grayscale(100%);opacity:0.45' : ''}" />`
@@ -56,7 +62,7 @@ function buildDigestHtml({ horrorNew, topRecommendations, weekLabel }) {
   return `
   <div style="max-width:560px;margin:0 auto;padding:24px 16px;background:#f4f6f7">
     <h1 style="font-family:${FONT};font-size:20px;color:#00e054;margin:0 0 4px">
-      🎃 Streamlist — ${weekLabel}
+      ${seasonalEmoji()} Streamlist — ${weekLabel}
     </h1>
     <p style="font-family:${FONT};font-size:13px;color:#556;margin:0 0 20px">
       New horror on your services, plus your top 10 horror picks currently streaming.
@@ -106,8 +112,8 @@ async function sendDigest({ horrorNew, topRecommendations }) {
     to: process.env.DIGEST_TO_EMAIL,
     subject:
       horrorNew.length > 0
-        ? `🎃 ${horrorNew.length} new horror pick${horrorNew.length === 1 ? '' : 's'} this week`
-        : `🎃 Your weekly horror top 10`,
+        ? `${seasonalEmoji()} ${horrorNew.length} new horror pick${horrorNew.length === 1 ? '' : 's'} this week`
+        : `${seasonalEmoji()} Your weekly horror top 10`,
     html: buildDigestHtml({ horrorNew, topRecommendations, weekLabel }),
   });
 

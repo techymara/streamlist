@@ -36,8 +36,24 @@ async function checkHorrorDiscovery({ verbose = false } = {}) {
     );
   }
 
+  // Don't report titles you've already watched (per your Letterboxd import) —
+  // "new to streaming" isn't useful if you've already seen the movie elsewhere.
+  let watchedIds = new Set();
+  if (brandNew.length) {
+    const watched = must(
+      await supabase
+        .from('liked_movies')
+        .select('tmdb_id')
+        .eq('status', 'watched')
+        .in('tmdb_id', brandNew.map((m) => m.tmdb_id)),
+      'load watched status'
+    );
+    watchedIds = new Set(watched.map((r) => r.tmdb_id));
+  }
+  const unseenNew = brandNew.filter((m) => !watchedIds.has(m.tmdb_id));
+
   const withProviders = [];
-  for (const m of brandNew) {
+  for (const m of unseenNew) {
     try {
       const providers = await tmdb.getWatchProviders(m.tmdb_id);
       const mySet = new Set(mySelectedIds);
@@ -48,7 +64,7 @@ async function checkHorrorDiscovery({ verbose = false } = {}) {
     }
   }
 
-  if (verbose) console.log(`[checker] ${withProviders.length} new horror titles this week`);
+  if (verbose) console.log(`[checker] ${withProviders.length} new horror titles this week (already-watched excluded)`);
   return withProviders;
 }
 
