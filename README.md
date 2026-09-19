@@ -2,7 +2,7 @@
 
 A personal, single-user movie tracker: tell it which streaming services you
 actually pay for and get a **weekly email** with two things — new horror
-movies that just became available, and an AI-scored top 10 horror picks
+movies that just became available, and a rating-weighted top 10 of horror picks
 currently streaming, with anything you've already seen (per your Letterboxd
 import) grayed out but still shown.
 
@@ -161,3 +161,7 @@ public/
   app.js                        Frontend logic
   styles.css                    Dark, Letterboxd-inspired styling
 ```
+
+## Attribution
+
+This product uses TMDB and the TMDB APIs but is not endorsed, certified, or otherwise approved by TMDB.
