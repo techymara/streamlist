@@ -1,0 +1,32 @@
+name: Weekly horror digest
+
+on:
+  schedule:
+    # Every Monday at 13:00 UTC (~9am US Eastern / 6am US Pacific).
+    # Edit the cron expression to change day/time: https://crontab.guru
+    - cron: '0 13 * * 1'
+  workflow_dispatch: {} # lets you click "Run workflow" in the GitHub Actions tab to test on demand
+
+jobs:
+  send-digest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run weekly digest
+        run: npm run digest
+        env:
+          TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
+          STREAMING_REGION: ${{ vars.STREAMING_REGION || 'US' }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          DIGEST_TO_EMAIL: ${{ secrets.DIGEST_TO_EMAIL }}
+          DIGEST_FROM_EMAIL: ${{ secrets.DIGEST_FROM_EMAIL }}

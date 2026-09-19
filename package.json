@@ -1,0 +1,21 @@
+{
+  "name": "movie-alerts",
+  "version": "2.0.0",
+  "description": "Personal Letterboxd-style tracker: a weekly email digest of new horror on your streaming services, plus alerts on movies you've specifically liked.",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "digest": "node scripts/weekly-digest.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.4",
+    "csv-parse": "^5.5.6",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "multer": "^1.4.5-lts.1",
+    "node-fetch": "^2.7.0",
+    "resend": "^4.0.1"
+  }
+}

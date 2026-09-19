@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Streamlist — your movies, your services</title>
+<link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">🎬 Streamlist</div>
+    <nav class="tabs">
+      <button class="tab-btn active" data-tab="mylist">My List</button>
+      <button class="tab-btn" data-tab="search">Add Movies</button>
+      <button class="tab-btn" data-tab="settings">Settings</button>
+    </nav>
+    <span class="digest-hint">📧 Weekly email digest — new horror + top 10 recommendations</span>
+  </header>
+
+  <main>
+    <!-- MY LIST -->
+    <section id="tab-mylist" class="tab-panel active">
+      <div class="panel-header">
+        <h1>My List</h1>
+        <div class="filter-row">
+          <button class="filter-btn active" data-filter="all">All</button>
+          <button class="filter-btn" data-filter="available">Streaming now</button>
+          <button class="filter-btn" data-filter="unavailable">Not yet available</button>
+        </div>
+      </div>
+      <div id="mylist-grid" class="grid"></div>
+      <p id="mylist-empty" class="empty-state" hidden>
+        Nothing here yet. Go to <strong>Add Movies</strong> to search for something you like,
+        or import your Letterboxd history from <strong>Settings</strong>.
+      </p>
+    </section>
+
+    <!-- SEARCH / ADD -->
+    <section id="tab-search" class="tab-panel">
+      <h1>Add Movies</h1>
+      <form id="search-form" class="search-form">
+        <input id="search-input" type="text" placeholder="Search for a movie..." autocomplete="off" />
+        <button type="submit">Search</button>
+      </form>
+      <div id="search-grid" class="grid"></div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section id="tab-settings" class="tab-panel">
+      <h1>Settings</h1>
+
+      <div class="settings-block">
+        <h2>Your streaming services</h2>
+        <p class="hint">
+          Check off what you actually subscribe to. Everything else will still show up in
+          "Now streaming" info as available-but-not-yours, so you always know if it's worth
+          a free trial.
+        </p>
+        <button id="expand-services-btn" class="secondary-btn">Load full service list from TMDb</button>
+        <div id="services-list" class="services-list"></div>
+      </div>
+
+      <div class="settings-block">
+        <h2>Import from Letterboxd</h2>
+        <p class="hint">
+          In Letterboxd: Settings → Import &amp; Export → Export Your Data. That gives you a
+          .zip with several CSVs — upload them here one at a time.
+        </p>
+        <label class="hint" for="import-type">What kind of file is this?</label>
+        <select id="import-type">
+          <option value="watched" selected>I've watched these — ratings.csv, watched.csv, or diary.csv (marks them "seen," used to gray out already-watched titles in your weekly top 10)</option>
+          <option value="watchlist">I want to watch these — watchlist.csv (adds to My List)</option>
+        </select>
+        <input id="letterboxd-file" type="file" accept=".csv" />
+        <button id="import-btn" class="secondary-btn">Import CSV</button>
+        <p id="import-status" class="hint"></p>
+      </div>
+
+      <div class="settings-block">
+        <h2>Weekly email digest</h2>
+        <p class="hint">
+          Sent automatically every week by a GitHub Actions schedule (see the README for setup) —
+          this server doesn't need to be running for that to happen. Use this button to send
+          yourself one right now, to confirm everything's wired up correctly.
+        </p>
+        <button id="test-digest-btn" class="secondary-btn">Send me this week's digest now</button>
+        <p id="digest-status" class="hint"></p>
+      </div>
+
+      <div class="settings-block">
+        <h2>Status</h2>
+        <p id="config-status" class="hint">Loading...</p>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <script src="/app.js"></script>
+</body>
+</html>
