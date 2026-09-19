@@ -1,5 +1,7 @@
 # Streamlist
 
+> **Personal, non-commercial project.** Streamlist is a hobby project that I run for myself. It is not a product or a service, it is not offered to anyone else, and it earns no money. It uses TMDB data, which TMDB only allows for non-commercial use, so if you copy it, please use your own TMDB API key and keep your use non-commercial. The MIT license covers this code only; TMDB's data and API are governed by TMDB's own terms.
+
 A personal, single-user movie tracker: tell it which streaming services you
 actually pay for and get a **weekly email** with two things — new horror
 movies that just became available, and a rating-weighted top 10 of horror picks
