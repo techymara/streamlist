@@ -121,10 +121,16 @@ async function discoverHorrorOnProviders(providerIds, { maxPages = 8 } = {}) {
   return all;
 }
 
+// Basic details for one movie. Used to refresh stored titles/posters, because TMDb's terms don't allow caching its data for more than 6 months.
+async function getMovieDetails(tmdbId) {
+  const d = await tmdbGet('/movie/' + tmdbId);
+  return { title: d.title, year: (d.release_date || '').slice(0, 4), poster_path: d.poster_path };
+}
 module.exports = {
   apiKeyPresent,
   searchMovies,
   getWatchProviders,
+  getMovieDetails,
   getAllMovieProviders,
   discoverHorrorOnProviders,
   HORROR_GENRE_ID,
