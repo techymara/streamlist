@@ -5,6 +5,14 @@ const tmdb = require('./tmdb');
 
 const MIN_VOTES_FOR_CONFIDENCE = 50; // "m" in the Bayesian formula below
 
+// TMDb's terms don't allow keeping TMDb data for more than 6 months.
+const HORROR_SEEN_MAX_AGE_DAYS = 150; // drop titles not on your services for ~5 months
+const TMDB_REFRESH_AFTER_DAYS = 30; // re-fetch stored TMDb details older than this
+
+function daysAgoIso(days) {
+  return new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+}
+
 async function getMySelectedServiceIds() {
   const rows = must(
     await supabase.from('my_services').select('provider_id').eq('selected', true),
@@ -28,13 +36,33 @@ async function checkHorrorDiscovery({ verbose = false } = {}) {
   const brandNew = currentHorror.filter((m) => !seenIds.has(m.tmdb_id));
 
   // Mark everything currently on-screen as seen (including titles that were
-  // already known) so nothing gets re-reported next week.
+  // already known) so nothing gets re-reported next week. This also refreshes
+  // the stored title/poster and the last_seen_at date on every run.
   if (currentHorror.length) {
-    await supabase.from('horror_seen').upsert(
-      currentHorror.map((m) => ({ tmdb_id: m.tmdb_id, title: m.title, year: m.year, poster_path: m.poster_path })),
-      { onConflict: 'tmdb_id', ignoreDuplicates: true }
-    );
+    const nowIso = new Date().toISOString();
+    const byId = new Map();
+    for (const m of currentHorror) {
+      byId.set(m.tmdb_id, {
+        tmdb_id: m.tmdb_id,
+        title: m.title,
+        year: m.year,
+        poster_path: m.poster_path,
+        last_seen_at: nowIso,
+      });
+    }
+    const { error: upsertError } = await supabase
+      .from('horror_seen')
+      .upsert(Array.from(byId.values()), { onConflict: 'tmdb_id' });
+    if (upsertError) throw new Error('save horror_seen: ' + upsertError.message);
   }
+
+  // TMDb terms: don't keep TMDb data more than 6 months. Remove titles that
+  // haven't shown up on your services for a long time.
+  const { error: purgeError } = await supabase
+    .from('horror_seen')
+    .delete()
+    .lt('last_seen_at', daysAgoIso(HORROR_SEEN_MAX_AGE_DAYS));
+  if (purgeError) throw new Error('purge horror_seen: ' + purgeError.message);
 
   // Don't report titles you've already watched (per your Letterboxd import) —
   // "new to streaming" isn't useful if you've already seen the movie elsewhere.
@@ -70,7 +98,7 @@ async function checkHorrorDiscovery({ verbose = false } = {}) {
 
 // ---------- 2. Top 10 recommendations (quality-score ranked) ----------
 // Uses the same "weighted rating" formula IMDb's Top 250 is built on:
-//   WR = (v / (v+m)) * R  +  (m / (v+m)) * C
+//   WR = (v / (v+m)) * R + (m / (v+m)) * C
 // where R = a title's own vote_average, v = its vote_count, C = the mean
 // vote_average across the candidate pool, and m = a minimum-votes threshold.
 // This keeps a 9.0-from-40-votes title from beating a 7.8-from-20,000-votes
@@ -155,7 +183,76 @@ async function refreshLikedAvailability({ verbose = false } = {}) {
     }
   }
   if (verbose) console.log(`[checker] Refreshed availability for ${updated} liked movies.`);
+
+  // TMDb terms: stored TMDb data (titles, posters, service names/logos) must
+  // not be kept more than 6 months, so re-fetch anything older than 30 days.
+  // A failure here must never break the digest.
+  try {
+    await refreshStaleTmdbData({ verbose });
+  } catch (err) {
+    console.error(`[checker] TMDb data refresh failed: ${err.message}`);
+  }
   return updated;
+}
+
+// ---------- 4. Keep stored TMDb data fresh (6-month rule) ----------
+async function refreshStaleTmdbData({ verbose = false } = {}) {
+  const cutoff = daysAgoIso(TMDB_REFRESH_AFTER_DAYS);
+
+  // Liked / watched movies: re-fetch title, year and poster from TMDb.
+  const staleMovies = must(
+    await supabase.from('liked_movies').select('id, tmdb_id, title').lt('tmdb_refreshed_at', cutoff),
+    'load stale liked movies'
+  );
+  let moviesRefreshed = 0;
+  for (const movie of staleMovies) {
+    try {
+      const d = await tmdb.getMovieDetails(movie.tmdb_id);
+      const { error } = await supabase
+        .from('liked_movies')
+        .update({
+          title: d.title || movie.title,
+          year: d.year,
+          poster_path: d.poster_path,
+          tmdb_refreshed_at: new Date().toISOString(),
+        })
+        .eq('id', movie.id);
+      if (error) throw new Error(error.message);
+      moviesRefreshed++;
+    } catch (err) {
+      if (verbose) console.error(`[checker] refresh ${movie.title}: ${err.message}`);
+    }
+  }
+
+  // Streaming services: re-fetch names and logos from TMDb's provider list.
+  const staleServices = must(
+    await supabase.from('my_services').select('provider_id').lt('tmdb_refreshed_at', cutoff),
+    'load stale services'
+  );
+  let servicesRefreshed = 0;
+  if (staleServices.length) {
+    const all = await tmdb.getAllMovieProviders();
+    const byId = new Map(all.map((p) => [p.provider_id, p]));
+    for (const row of staleServices) {
+      const p = byId.get(row.provider_id);
+      if (!p) continue; // service no longer listed by TMDb; leave as is
+      const { error } = await supabase
+        .from('my_services')
+        .update({
+          provider_name: p.provider_name,
+          logo_path: p.logo_path,
+          tmdb_refreshed_at: new Date().toISOString(),
+        })
+        .eq('provider_id', row.provider_id);
+      if (error) throw new Error(error.message);
+      servicesRefreshed++;
+    }
+  }
+
+  if (verbose) {
+    console.log(`[checker] Refreshed TMDb data for ${moviesRefreshed} movies and ${servicesRefreshed} services.`);
+  }
+  return { moviesRefreshed, servicesRefreshed };
 }
 
 module.exports = { checkHorrorDiscovery, getTopHorrorRecommendations, refreshLikedAvailability };
