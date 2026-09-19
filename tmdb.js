@@ -18,7 +18,8 @@ async function tmdbGet(pathname, params = {}) {
   }
   const url = new URL(BASE + pathname);
   for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
-  const key = String(process.env.TMDB_API_KEY).trim();
+  const key = String(process.env.TMDB_API_KEY).trim().replace(/^(TMDB_API_KEY=|Bearer\s+)/i, '').replace(/^[\x22\x27]|[\x22\x27]$/g, '').trim();
+  console.log('[digest] TMDb key check: length ' + key.length + ', starts with eyJ: ' + key.startsWith('eyJ'));
   const headers = { accept: 'application/json' };
   if (key.length > 40) headers.Authorization = 'Bearer ' + key; else url.searchParams.set('api_key', key);
   const res = await fetch(url.toString(), { headers });
