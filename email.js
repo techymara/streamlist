@@ -86,7 +86,7 @@ function buildDigestHtml({ horrorNew, topRecommendations, weekLabel }) {
     </table>
 
     <p style="font-family:${FONT};font-size:11px;color:#99a;margin-top:32px">
-      Sent by your own Streamlist instance. Manage your list and services in the app.
+      Sent by your own Streamlist instance. Manage your list and services in the app. This product uses TMDB and the TMDB APIs but is not endorsed, certified, or otherwise approved by TMDB.
     </p>
   </div>`;
 }
