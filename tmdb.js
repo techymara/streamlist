@@ -18,7 +18,10 @@ async function tmdbGet(pathname, params = {}) {
   }
   const url = new URL(BASE + pathname);
   for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
-  const res = await fetch(url.toString(), { headers: { Authorization: 'Bearer ' + process.env.TMDB_API_KEY, accept: 'application/json' } });
+  const key = String(process.env.TMDB_API_KEY).trim();
+  const headers = { accept: 'application/json' };
+  if (key.length > 40) headers.Authorization = 'Bearer ' + key; else url.searchParams.set('api_key', key);
+  const res = await fetch(url.toString(), { headers });
   if (!res.ok) {
     const body = await res.text().catch(() => '');
     throw new Error(`TMDb ${res.status} on ${pathname}: ${body}`);
