@@ -60,3 +60,10 @@ insert into my_services (provider_id, provider_name, selected) values
   (43, 'Starz', false),
   (37, 'Showtime', false)
 on conflict (provider_id) do nothing;
+
+
+-- TMDb API terms: TMDb data may not be cached longer than 6 months, so the app
+-- records when each row's TMDb data was last refreshed and refreshes or removes stale rows.
+alter table horror_seen add column if not exists last_seen_at timestamptz default now();
+alter table liked_movies add column if not exists tmdb_refreshed_at timestamptz default now();
+alter table my_services add column if not exists tmdb_refreshed_at timestamptz default now();
