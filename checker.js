@@ -128,19 +128,25 @@ async function getTopHorrorRecommendations({ verbose = false, limit = 10 } = {})
   }
 
   const pool = await tmdb.discoverHorrorOnProviders(mySelectedIds, { maxPages: 10 });
-  const ranked = rankByQuality(pool).slice(0, limit);
+  const rankedAll = rankByQuality(pool);
 
-  // Mark which of these you've already watched, per your Letterboxd import
-  // (status = 'watched' in liked_movies — see the Settings import UI).
-  const ids = ranked.map((m) => m.tmdb_id);
-  let watchedIds = new Set();
-  if (ids.length) {
+  // Skip anything you've already watched (status = 'watched' in liked_movies,
+  // kept current by the Letterboxd import and feed sync) so the top 10 is made
+  // of movies you haven't seen yet.
+  const watchedIds = new Set();
+  const allIds = rankedAll.map((m) => m.tmdb_id);
+  for (let i = 0; i < allIds.length; i += 100) {
     const watched = must(
-      await supabase.from('liked_movies').select('tmdb_id').eq('status', 'watched').in('tmdb_id', ids),
+      await supabase
+        .from('liked_movies')
+        .select('tmdb_id')
+        .eq('status', 'watched')
+        .in('tmdb_id', allIds.slice(i, i + 100)),
       'load watched status'
     );
-    watchedIds = new Set(watched.map((r) => r.tmdb_id));
+    for (const r of watched) watchedIds.add(r.tmdb_id);
   }
+  const ranked = rankedAll.filter((m) => !watchedIds.has(m.tmdb_id)).slice(0, limit);
 
   const withProviders = [];
   for (const movie of ranked) {
@@ -152,7 +158,7 @@ async function getTopHorrorRecommendations({ verbose = false, limit = 10 } = {})
     } catch (err) {
       // leave providerNames empty rather than failing the whole digest
     }
-    withProviders.push({ ...movie, providerNames, seen: watchedIds.has(movie.tmdb_id) });
+    withProviders.push({ ...movie, providerNames, seen: false });
   }
 
   if (verbose) console.log(`[checker] Top ${withProviders.length} horror recommendations ranked.`);
