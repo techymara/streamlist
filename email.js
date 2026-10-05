@@ -79,7 +79,7 @@ function buildDigestHtml({ horrorNew, topRecommendations, weekLabel }) {
       🏆 Top 10 horror streaming now
     </h2>
     <p style="font-family:${FONT};font-size:12px;color:#889;margin:0 0 8px">
-      Ranked by rating quality, not just popularity. Grayed-out titles are ones you've already seen (per your Letterboxd import) — still listed so you know they made the cut.
+      Ranked by rating quality, not just popularity. Movies you've already seen (per your Letterboxd data) are skipped, so these are all new to you.
     </p>
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
       ${recRows}
