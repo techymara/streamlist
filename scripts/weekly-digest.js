@@ -3,9 +3,18 @@
 require('dotenv').config();
 const { supabase } = require('../db');
 const { checkHorrorDiscovery, getTopHorrorRecommendations, refreshLikedAvailability } = require('../checker');
+const { syncLetterboxdRss } = require('../letterboxd-sync');
 const { sendDigest } = require('../email');
 
 (async () => {
+  console.log('[digest] Syncing recent watches from your Letterboxd feed...');
+  try {
+    await syncLetterboxdRss({ verbose: true });
+  } catch (err) {
+    // A Letterboxd hiccup must never stop the weekly email.
+    console.error('[digest] Letterboxd sync skipped:', err.message);
+  }
+
   console.log('[digest] Checking new horror on your services...');
   const horrorNew = await checkHorrorDiscovery({ verbose: true });
 
